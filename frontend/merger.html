@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dataset Merger · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+<style>
+  /* ── Folder Browser Modal (merger-specific overlay, high z-index) ── */
+  #folderBrowserModal {
+    z-index: 9000; /* above shell modal at z-index 100 */
+  }
+  #folderBrowserModal .cis-modal {
+    width: min(680px, 96vw);
+    max-height: 80vh;
+    padding: 0;          /* header/footer provide their own padding */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--cis-surface-solid);
+  }
+
+  .cis-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--cis-surface-border);
+    flex-shrink: 0;
+  }
+  .cis-modal-header h3 { margin: 0; font-size: 1rem; flex: 1; color: var(--cis-text); }
+  .cis-modal-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--cis-text-muted);
+    font-size: 1.1rem; padding: 4px 8px; border-radius: 6px;
+    transition: background var(--cis-transition);
+  }
+  .cis-modal-close:hover { background: var(--cis-surface-border); color: var(--cis-text); }
+
+  .cis-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 22px;
+    font-size: 0.8rem;
+    color: var(--cis-text-muted);
+    border-bottom: 1px solid var(--cis-surface-border);
+    background: rgba(0,0,0,0.2);
+    flex-shrink: 0;
+  }
+  .cis-breadcrumb-seg {
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background var(--cis-transition);
+  }
+  .cis-breadcrumb-seg:hover { background: var(--cis-surface-border); color: var(--cis-text); }
+  .cis-breadcrumb-sep { opacity: 0.4; }
+
+  .cis-dir-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+  .cis-dir-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 22px;
+    cursor: pointer;
+    transition: background var(--cis-transition);
+    font-size: 0.9rem;
+    color: var(--cis-text);
+  }
+  .cis-dir-item:hover { background: rgba(255,255,255,0.05); }
+  .cis-dir-item.locked { opacity: 0.4; cursor: not-allowed; }
+  .cis-dir-item i { width: 16px; text-align: center; color: var(--cis-primary); }
+  .cis-dir-item.locked i { color: var(--cis-text-faint); }
+  .cis-dir-item-name { flex: 1; }
+  .cis-dir-item-arrow { color: var(--cis-text-faint); font-size: 0.75rem; }
+
+  .cis-modal-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--cis-surface-border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.15);
+  }
+  .cis-modal-path-display {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--cis-text-muted);
+    font-family: var(--cis-font-mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cis-dir-empty {
+    padding: 32px 22px;
+    text-align: center;
+    color: var(--cis-text-faint);
+    font-size: 0.85rem;
+  }
+  .cis-dir-spinner {
+    padding: 32px 22px;
+    text-align: center;
+    color: var(--cis-text-muted);
+  }
+
+  /* ── Selected Datasets Chips ── */
+  .cis-chip-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 38px;
+    padding: 6px 10px;
+    border: 1px solid var(--cis-surface-border);
+    border-radius: var(--cis-radius-sm);
+    background: rgba(255,255,255,0.03);
+    align-items: center;
+  }
+  .cis-chip-placeholder {
+    color: var(--cis-text-faint);
+    font-size: 0.85rem;
+  }
+  .cis-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(114,171,82,0.15);
+    color: var(--cis-primary-light);
+    border: 1px solid rgba(114,171,82,0.3);
+    border-radius: 20px;
+    padding: 3px 10px 3px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  .cis-chip-remove {
+    background: none; border: none; cursor: pointer;
+    color: inherit; opacity: 0.6; padding: 0; line-height: 1;
+    font-size: 0.85rem;
+    transition: opacity 0.15s;
+  }
+  .cis-chip-remove:hover { opacity: 1; }
+
+  .cis-add-path-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .cis-add-path-row input { flex: 1; }
+
+  /* ── Class Mapping UI ── */
+  .cm-section-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--cis-text-faint);
+    margin: 0 0 10px;
+  }
+  .cm-pool {
+    display: flex; flex-wrap: wrap; gap: 7px;
+    min-height: 44px; padding: 10px 12px;
+    border: 1px dashed var(--cis-surface-border);
+    border-radius: var(--cis-radius-sm);
+    background: rgba(255,255,255,0.02);
+  }
+  .cm-pool.drag-over { border-color: var(--cis-primary); background: rgba(114,171,82,0.06); }
+  .cm-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px; font-size: 12px;
+    font-weight: 500; cursor: grab; user-select: none;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .cm-tag:active { cursor: grabbing; opacity: 0.7; transform: scale(0.95); }
+  .cm-tag.source {
+    background: rgba(255,255,255,0.07);
+    color: var(--cis-text);
+    border: 1px solid var(--cis-surface-border);
+  }
+  .cm-tag.mapped {
+    background: rgba(114,171,82,0.15);
+    color: var(--cis-primary-light);
+    border: 1px solid rgba(114,171,82,0.3);
+  }
+  .cm-tag-rm {
+    background: none; border: none; cursor: pointer;
+    color: inherit; opacity: 0.5; padding: 0 2px;
+    font-size: 11px; line-height: 1;
+  }
+  .cm-tag-rm:hover { opacity: 1; }
+
+  .cm-groups { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+  .cm-group {
+    border: 1px solid var(--cis-surface-border);
+    border-radius: var(--cis-radius-sm);
+    overflow: hidden;
+    background: rgba(255,255,255,0.02);
+    transition: border-color 0.2s;
+  }
+  .cm-group.drag-over { border-color: var(--cis-primary); background: rgba(114,171,82,0.05); }
+  .cm-group-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--cis-surface-border);
+  }
+  .cm-group-header .cm-target-input {
+    flex: 1; background: transparent; border: none;
+    color: var(--cis-text); font-weight: 600; font-size: 13px;
+    font-family: var(--cis-font-body); outline: none;
+    padding: 2px 4px; border-radius: 4px;
+    transition: background 0.15s;
+  }
+  .cm-group-header .cm-target-input:focus { background: rgba(255,255,255,0.06); }
+  .cm-group-header .cm-target-input::placeholder { color: var(--cis-text-faint); }
+  .cm-group-body {
+    min-height: 40px; padding: 10px 14px;
+    display: flex; flex-wrap: wrap; gap: 7px;
+    align-items: flex-start;
+  }
+  .cm-group-drop-hint {
+    color: var(--cis-text-faint); font-size: 12px; font-style: italic;
+    align-self: center;
+  }
+  .cm-delete-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--cis-text-faint); font-size: 13px; padding: 4px 6px;
+    border-radius: 4px; transition: all 0.15s;
+  }
+  .cm-delete-btn:hover { color: #f0a6a3; background: rgba(217,83,79,0.1); }
+
+  .cm-preview-list {
+    display: flex; flex-direction: column; gap: 6px;
+    margin-top: 12px;
+  }
+  .cm-preview-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; padding: 6px 12px;
+    border-radius: var(--cis-radius-sm);
+    background: rgba(255,255,255,0.03);
+  }
+  .cm-preview-idx {
+    font-family: var(--cis-font-mono); font-size: 11px;
+    color: var(--cis-text-faint); min-width: 22px;
+    text-align: right;
+  }
+  .cm-preview-name { font-weight: 600; color: var(--cis-primary-light); flex: 1; }
+  .cm-preview-sources { font-size: 11px; color: var(--cis-text-muted); }
+  .cm-warn { color: #f5c518; font-size: 12px; margin-top: 6px; }
+  .cm-err  { color: #f0a6a3; font-size: 12px; margin-top: 6px; }
+</style>
+
+
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("merger", "Dataset Merger", "Combine multiple datasets with automatic duplicate and quality filtering");
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  FOLDER BROWSER MODAL                                         -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="cis-modal-backdrop" id="folderBrowserModal">
+  <div class="cis-modal">
+    <div class="cis-modal-header">
+      <i class="fa-solid fa-folder-open" style="color: var(--cis-primary);"></i>
+      <h3>Browse Server Filesystem</h3>
+      <button class="cis-modal-close" id="closeFolderModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="cis-breadcrumb" id="fsBreadcrumb">
+      <span class="cis-breadcrumb-seg" data-path="/">
+        <i class="fa-solid fa-server" style="margin-right:4px;"></i>Root
+      </span>
+    </div>
+
+    <div class="cis-dir-list" id="fsDirList">
+      <div class="cis-dir-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+    </div>
+
+    <div class="cis-modal-footer">
+      <span class="cis-modal-path-display" id="fsCurrentPathDisplay">/</span>
+      <button class="cis-btn cis-btn-ghost cis-btn-sm" id="closeFolderModalCancel">Cancel</button>
+      <button class="cis-btn cis-btn-primary cis-btn-sm" id="selectFolderBtn">
+        <i class="fa-solid fa-circle-check"></i> Select This Folder
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  MAIN BENTO                                                   -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="cis-bento">
+  <div class="cis-card cis-span-4">
+    <div class="cis-card-header">
+      <span class="cis-card-title">New Merge Operation</span>
+    </div>
+
+    <div class="cis-field">
+      <label class="cis-label">Merge Output Name</label>
+      <input class="cis-input" id="mergeNameInput" placeholder="e.g. combined_project_v1">
+    </div>
+
+    <div class="cis-field">
+      <label class="cis-label" style="margin-bottom: 8px;">
+        Source Datasets
+        <span style="font-weight:400; color: var(--cis-text-secondary); margin-left:6px; font-size: 0.8rem;">
+          — pick from registry or browse server folders
+        </span>
+      </label>
+
+      <!-- Chip display of selected datasets -->
+      <div class="cis-chip-container" id="selectedDatasetsChips">
+        <span class="cis-chip-placeholder" id="chipPlaceholder">No datasets selected yet</span>
+      </div>
+
+      <!-- Add from registry -->
+      <div class="cis-add-path-row" style="margin-top:10px;">
+        <select class="cis-select" id="registrySelect" style="flex:1;">
+          <option value="" disabled selected>Add from registered datasets…</option>
+        </select>
+        <button class="cis-btn cis-btn-ghost" id="addFromRegistryBtn" title="Add selected dataset">
+          <i class="fa-solid fa-plus"></i> Add
+        </button>
+      </div>
+
+      <!-- Manual path + folder browser -->
+      <div class="cis-add-path-row">
+        <input class="cis-input" id="manualPathInput" placeholder="Or type/paste a server path  e.g. /data/my-dataset">
+        <button class="cis-btn cis-btn-ghost" id="openFolderBrowserBtn" title="Browse server filesystem">
+          <i class="fa-solid fa-folder-open"></i> Browse
+        </button>
+        <button class="cis-btn cis-btn-ghost" id="addManualPathBtn" title="Add typed path">
+          <i class="fa-solid fa-plus"></i> Add
+        </button>
+      </div>
+    </div>
+
+    <button class="cis-btn cis-btn-primary" id="startAnalysisBtn">
+      <i class="fa-solid fa-magnifying-glass"></i> Analyze Datasets
+    </button>
+  </div>
+
+  <div class="cis-card cis-span-4" id="analysisResultCard" style="display: none;">
+    <div class="cis-card-header">
+      <span class="cis-card-title">Analysis Report</span>
+      <div class="cis-card-icon" id="analysisStatusIcon"><i class="fa-solid fa-spinner fa-spin"></i></div>
+    </div>
+
+    <div id="analysisDetails" style="display: none;">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div class="cis-card" style="background: var(--cis-surface);">
+          <div class="cis-stat-value" id="statTotalImages">0</div>
+          <div class="cis-stat-delta">Total Images</div>
+        </div>
+        <div class="cis-card" style="background: var(--cis-surface);">
+          <div class="cis-stat-value cis-text-danger" id="statDuplicates">0</div>
+          <div class="cis-stat-delta">Duplicates</div>
+        </div>
+        <div class="cis-card" style="background: var(--cis-surface);">
+          <div class="cis-stat-value cis-text-warning" id="statBlurry">0</div>
+          <div class="cis-stat-delta">Blurry</div>
+        </div>
+        <div class="cis-card" style="background: var(--cis-surface);">
+          <div class="cis-stat-value cis-text-danger" id="statCorrupted">0</div>
+          <div class="cis-stat-delta">Corrupted</div>
+        </div>
+      </div>
+
+      <!-- Per-dataset breakdown injected here by merger.js -->
+      <div id="analysisBreakdown"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!--  CLASS MAPPING CARD                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="cis-card cis-span-4" id="classMappingCard" style="display:none;">
+    <div class="cis-card-header">
+      <i class="fa-solid fa-tags" style="color:var(--cis-primary);"></i>
+      <span class="cis-card-title">Class Mapping</span>
+      <span class="cis-card-subtitle" style="font-size:12px;color:var(--cis-text-muted);margin-left:8px;">
+        Drag classes into groups to unify equivalent labels
+      </span>
+    </div>
+
+    <!-- Unassigned class pool -->
+    <p class="cm-section-title">Unassigned Classes</p>
+    <div class="cm-pool" id="cmUnassignedPool" data-zone="pool">
+      <span style="color:var(--cis-text-faint);font-size:12px;font-style:italic;">No classes detected yet</span>
+    </div>
+
+    <!-- Mapping groups -->
+    <div class="cm-groups" id="cmGroups"></div>
+
+    <div style="display:flex;gap:10px;margin-top:14px;align-items:center;">
+      <button class="cis-btn cis-btn-ghost cis-btn-sm" id="cmAddGroupBtn">
+        <i class="fa-solid fa-plus"></i> Add Merge Group
+      </button>
+      <button class="cis-btn cis-btn-ghost cis-btn-sm" id="cmResetBtn">
+        <i class="fa-solid fa-rotate-left"></i> Reset All
+      </button>
+      <div style="flex:1;"></div>
+      <button class="cis-btn cis-btn-ghost cis-btn-sm" id="cmPreviewBtn">
+        <i class="fa-solid fa-eye"></i> Preview Taxonomy
+      </button>
+    </div>
+
+    <!-- Preview panel (hidden until toggled) -->
+    <div id="cmPreviewPanel" style="display:none;margin-top:16px;">
+      <p class="cm-section-title">Final Class Taxonomy</p>
+      <div class="cm-preview-list" id="cmPreviewList"></div>
+      <div id="cmValidationMsg"></div>
+    </div>
+
+    <!-- Merge Settings -->
+    <div style="border-top:1px solid var(--cis-surface-border);margin-top:20px;padding-top:18px;">
+      <h3 style="margin:0 0 14px;font-size:14px;">Merge Settings</h3>
+      <div style="display:flex;gap:24px;margin-bottom:20px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="chkRemoveDuplicates" checked> Remove Duplicates
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="chkRemoveBlurry"> Remove Blurry
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="chkRemoveCorrupted" checked> Remove Corrupted
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="cis-btn cis-btn-ghost" id="cmSaveMappingsBtn">
+          <i class="fa-solid fa-floppy-disk"></i> Save Mappings
+        </button>
+        <button class="cis-btn cis-btn-success" id="startMergeBtn" disabled>
+          <i class="fa-solid fa-code-merge"></i> Start Merge
+        </button>
+        <span id="cmSavedBadge" style="display:none;font-size:12px;color:var(--cis-primary-light);">
+          <i class="fa-solid fa-check"></i> Mappings saved
+        </span>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="cis-card cis-span-4" id="mergeStatusCard" style="display: none;">
+    <div class="cis-card-header">
+      <span class="cis-card-title">Merge Status</span>
+      <div class="cis-card-icon" id="mergeStatusIcon"><i class="fa-solid fa-spinner fa-spin"></i></div>
+    </div>
+    <div id="mergeStatusText" style="margin-bottom: 16px;">Merging datasets in background...</div>
+    <div id="mergeDownloadBtnContainer" style="display: none;">
+      <a class="cis-btn cis-btn-primary" id="downloadZipBtn" target="_blank">
+        <i class="fa-solid fa-download"></i> Download ZIP
+      </a>
+    </div>
+  </div>
+
+  <div class="cis-card cis-span-4">
+    <div class="cis-card-header">
+      <span class="cis-card-title">Recent Merge Operations</span>
+    </div>
+    <table class="cis-table" style="width:100%; text-align:left;">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Images</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="operationsTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="js/merger.js"></script>
+</body>
+</html>

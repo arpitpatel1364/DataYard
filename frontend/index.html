@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("dashboard", "Dashboard", "Overview of your dataset intelligence operations");
+</script>
+
+<div id="dashboardRoot">
+  <div class="cis-bento">
+    <div class="cis-card cis-span-1">
+      <div class="cis-card-header">
+        <span class="cis-card-title">Datasets</span>
+        <div class="cis-card-icon"><i class="fa-solid fa-database"></i></div>
+      </div>
+      <div class="cis-stat-value" id="statDatasets">—</div>
+      <div class="cis-stat-delta">registered in CIS</div>
+    </div>
+
+    <div class="cis-card cis-span-1">
+      <div class="cis-card-header">
+        <span class="cis-card-title">Avg Health Score</span>
+        <div class="cis-card-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+      </div>
+      <div class="cis-stat-value" id="statHealth">—</div>
+      <div class="cis-stat-delta">across latest scans</div>
+    </div>
+
+    <div class="cis-card cis-span-1">
+      <div class="cis-card-header">
+        <span class="cis-card-title">Models Tested</span>
+        <div class="cis-card-icon"><i class="fa-solid fa-flask"></i></div>
+      </div>
+      <div class="cis-stat-value" id="statModels">—</div>
+      <div class="cis-stat-delta">in the Testing Lab</div>
+    </div>
+
+    <div class="cis-card cis-span-1">
+      <div class="cis-card-header">
+        <span class="cis-card-title">Monitoring Jobs</span>
+        <div class="cis-card-icon"><i class="fa-solid fa-satellite-dish"></i></div>
+      </div>
+      <div class="cis-stat-value" id="statMonitoring">—</div>
+      <div class="cis-stat-delta">active background scans</div>
+    </div>
+
+    <div class="cis-card cis-span-2">
+      <div class="cis-card-header">
+        <span class="cis-card-title">Health Score Distribution</span>
+      </div>
+      <canvas id="healthChart" height="180"></canvas>
+    </div>
+
+    <div class="cis-card cis-span-2">
+      <div class="cis-card-header">
+        <span class="cis-card-title">Quick Actions</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <a class="cis-btn cis-btn-primary" href="/import.html"><i class="fa-solid fa-file-import"></i> Import a new dataset</a>
+        <a class="cis-btn cis-btn-ghost" href="/compare.html"><i class="fa-solid fa-code-compare"></i> Compare two datasets</a>
+        <a class="cis-btn cis-btn-ghost" href="/model-lab.html"><i class="fa-solid fa-flask"></i> Test a model</a>
+      </div>
+    </div>
+
+    <div class="cis-card cis-span-4">
+      <div class="cis-card-header">
+        <span class="cis-card-title">Recent Datasets</span>
+        <a class="cis-btn cis-btn-ghost cis-btn-sm" href="/datasets.html">View all</a>
+      </div>
+      <div id="recentDatasetsTable"><div class="cis-loader"><div class="cis-spinner"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/dashboard.js"></script>
+</body>
+</html>

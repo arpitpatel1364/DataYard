@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Testing Lab · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("model-lab", "Model Testing Lab", "Upload a model and run accuracy, performance, efficiency, output-quality and robustness tests");
+</script>
+
+<div class="cis-bento">
+  <div class="cis-card cis-span-4" id="capabilitiesCard"></div>
+
+  <div class="cis-card cis-span-4">
+    <div class="cis-card-header"><span class="cis-card-title">Upload a Model</span></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="cis-field" style="flex:1;min-width:240px;margin-bottom:0;">
+        <label class="cis-label">Model file (.pt, .onnx, .engine, .xml)</label>
+        <input class="cis-input" type="file" id="modelFileInput" accept=".pt,.pth,.onnx,.engine,.xml">
+      </div>
+      <div class="cis-field" style="flex:1;min-width:240px;margin-bottom:0;">
+        <label class="cis-label">Validation dataset (optional, for accuracy metrics)</label>
+        <select class="cis-select" id="modelDatasetSelect"><option value="">None</option></select>
+      </div>
+      <button class="cis-btn cis-btn-primary" id="uploadModelBtn"><i class="fa-solid fa-upload"></i> Upload</button>
+    </div>
+  </div>
+
+  <div class="cis-card cis-span-4">
+    <div class="cis-card-header"><span class="cis-card-title">Uploaded Models</span></div>
+    <div id="modelsTable"><div class="cis-loader"><div class="cis-spinner"></div></div></div>
+  </div>
+</div>
+
+<script>
+(async function () {
+  try {
+    const caps = await CISApi.get("/api/models/capabilities");
+    document.getElementById("capabilitiesCard").innerHTML = `
+      <div class="cis-card-title" style="margin-bottom:10px;">Runtime Capabilities Detected on This Server</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${Object.entries(caps).map(([k, v]) => `<span class="cis-badge cis-badge-${v ? "success" : "neutral"}"><i class="fa-solid fa-${v ? "check" : "xmark"}"></i> ${k}</span>`).join("")}
+      </div>
+      <p style="margin-top:10px;font-size:12px;">Install missing optional packages (torch, onnxruntime, ultralytics, tensorrt, openvino) on the server to unlock the corresponding benchmark types.</p>
+    `;
+  } catch (e) {}
+
+  try {
+    const datasets = await CISApi.get("/api/datasets");
+    document.getElementById("modelDatasetSelect").innerHTML += datasets.map(d => `<option value="${d.id}">${cisEscape(d.name)}</option>`).join("");
+  } catch (e) {}
+
+  await refreshModels();
+})();
+
+document.getElementById("uploadModelBtn").addEventListener("click", async () => {
+  const fileInput = document.getElementById("modelFileInput");
+  if (!fileInput.files.length) return cisToast("Choose a model file", "error");
+  const fd = new FormData();
+  fd.append("file", fileInput.files[0]);
+  const datasetId = document.getElementById("modelDatasetSelect").value;
+  if (datasetId) fd.append("dataset_id", datasetId);
+
+  const btn = document.getElementById("uploadModelBtn");
+  btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading…`;
+  try {
+    await CISApi.post("/api/models/upload", fd);
+    cisToast("Model uploaded");
+    fileInput.value = "";
+    await refreshModels();
+  } catch (e) {
+    cisToast(e.message || "Upload failed", "error");
+  } finally {
+    btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-upload"></i> Upload`;
+  }
+});
+
+async function refreshModels() {
+  try {
+    const models = await CISApi.get("/api/models");
+    const container = document.getElementById("modelsTable");
+    if (!models.length) {
+      container.innerHTML = `<div class="cis-empty-state"><i class="fa-solid fa-flask"></i>No models uploaded yet.</div>`;
+      return;
+    }
+    container.innerHTML = `
+      <table class="cis-table">
+        <thead><tr><th>Name</th><th>Framework</th><th>Size</th><th>Uploaded</th><th></th></tr></thead>
+        <tbody>
+          ${models.map(m => `
+            <tr>
+              <td><strong>${cisEscape(m.name)}</strong></td>
+              <td><span class="cis-badge cis-badge-neutral">${m.framework}</span></td>
+              <td>${m.file_size_mb} MB</td>
+              <td>${cisFmtDate(m.created_at)}</td>
+              <td><a class="cis-btn cis-btn-ghost cis-btn-sm" href="/model-detail.html?id=${m.id}">Open</a></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>`;
+  } catch (e) { cisToast(e.message || "Failed to load models", "error"); }
+}
+</script>
+</body>
+</html>

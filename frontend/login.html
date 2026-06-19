@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .auth-box {
+    width: 380px; padding: 36px;
+    background: var(--cis-glass-bg); border: 1px solid var(--cis-glass-border);
+    border-radius: var(--cis-radius-lg); box-shadow: var(--cis-shadow-card);
+    backdrop-filter: blur(16px);
+  }
+  .auth-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+  .auth-logo .mark {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-dark));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--cis-font-display); font-weight: 700; color: #06140a;
+  }
+  .auth-tabs { display: flex; margin-bottom: 22px; border-radius: 10px; background: rgba(255,255,255,0.04); padding: 4px; }
+  .auth-tab { flex: 1; text-align: center; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--cis-text-faint); }
+  .auth-tab.active { background: var(--cis-primary); color: #06140a; }
+  .auth-error { color: #f0a6a3; font-size: 12.5px; margin-bottom: 12px; min-height: 16px; }
+</style>
+</head>
+<body>
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="mark">CI</div>
+      <div>
+        <div style="font-family:var(--cis-font-display);font-weight:700;font-size:16px;">Cactus Intelligence</div>
+        <div style="font-size:11px;color:var(--cis-text-faint);text-transform:uppercase;letter-spacing:0.05em;">Cactus Creatives</div>
+      </div>
+    </div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabLogin">Sign in</div>
+      <div class="auth-tab" id="tabRegister">Create account</div>
+    </div>
+
+    <div class="auth-error" id="authError"></div>
+
+    <form id="loginForm">
+      <div class="cis-field">
+        <label class="cis-label">Email</label>
+        <input class="cis-input" type="email" id="loginEmail" placeholder="you@company.com" required>
+      </div>
+      <div class="cis-field">
+        <label class="cis-label">Password</label>
+        <input class="cis-input" type="password" id="loginPassword" placeholder="••••••••" required>
+      </div>
+      <button class="cis-btn cis-btn-primary" style="width:100%;justify-content:center;" type="submit">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in
+      </button>
+      <div style="text-align:center;margin-top:14px;">
+        <a href="#" id="forgotLink" style="font-size:12.5px;color:var(--cis-text-faint);">Forgot password?</a>
+      </div>
+    </form>
+
+    <form id="registerForm" style="display:none;">
+      <div class="cis-field">
+        <label class="cis-label">Full name</label>
+        <input class="cis-input" type="text" id="regName" placeholder="Jane Doe">
+      </div>
+      <div class="cis-field">
+        <label class="cis-label">Email</label>
+        <input class="cis-input" type="email" id="regEmail" placeholder="you@company.com" required>
+      </div>
+      <div class="cis-field">
+        <label class="cis-label">Password</label>
+        <input class="cis-input" type="password" id="regPassword" placeholder="At least 8 characters" required minlength="8">
+      </div>
+      <button class="cis-btn cis-btn-primary" style="width:100%;justify-content:center;" type="submit">
+        <i class="fa-solid fa-user-plus"></i> Create account
+      </button>
+      <p style="font-size:11.5px;text-align:center;margin-top:14px;">The first registered account becomes the platform Admin.</p>
+    </form>
+
+    <form id="forgotForm" style="display:none;">
+      <div class="cis-field">
+        <label class="cis-label">Email</label>
+        <input class="cis-input" type="email" id="forgotEmail" placeholder="you@company.com" required>
+      </div>
+      <button class="cis-btn cis-btn-primary" style="width:100%;justify-content:center;" type="submit">
+        <i class="fa-solid fa-paper-plane"></i> Send reset link
+      </button>
+      <div style="text-align:center;margin-top:14px;">
+        <a href="#" id="backToLogin" style="font-size:12.5px;color:var(--cis-text-faint);">Back to sign in</a>
+      </div>
+    </form>
+  </div>
+
+<script src="js/api.js"></script>
+<script>
+  if (CISApi.isAuthenticated()) window.location.href = "/index.html";
+
+  const tabLogin = document.getElementById("tabLogin");
+  const tabRegister = document.getElementById("tabRegister");
+  const loginForm = document.getElementById("loginForm");
+  const registerForm = document.getElementById("registerForm");
+  const forgotForm = document.getElementById("forgotForm");
+  const authError = document.getElementById("authError");
+
+  function showForm(form) {
+    [loginForm, registerForm, forgotForm].forEach(f => f.style.display = "none");
+    form.style.display = "block";
+    authError.innerText = "";
+  }
+
+  tabLogin.addEventListener("click", () => {
+    tabLogin.classList.add("active"); tabRegister.classList.remove("active");
+    showForm(loginForm);
+  });
+  tabRegister.addEventListener("click", () => {
+    tabRegister.classList.add("active"); tabLogin.classList.remove("active");
+    showForm(registerForm);
+  });
+  document.getElementById("forgotLink").addEventListener("click", (e) => { e.preventDefault(); showForm(forgotForm); });
+  document.getElementById("backToLogin").addEventListener("click", (e) => { e.preventDefault(); showForm(loginForm); });
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    authError.innerText = "";
+    try {
+      const data = await CISApi.post("/api/auth/login", {
+        email: document.getElementById("loginEmail").value,
+        password: document.getElementById("loginPassword").value,
+      }, { noAuth: true });
+      CISApi.setTokens(data.access_token, data.refresh_token);
+      window.location.href = "/index.html";
+    } catch (err) {
+      authError.innerText = err.message || "Login failed";
+    }
+  });
+
+  registerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    authError.innerText = "";
+    try {
+      await CISApi.post("/api/auth/register", {
+        email: document.getElementById("regEmail").value,
+        password: document.getElementById("regPassword").value,
+        full_name: document.getElementById("regName").value,
+      }, { noAuth: true });
+      const data = await CISApi.post("/api/auth/login", {
+        email: document.getElementById("regEmail").value,
+        password: document.getElementById("regPassword").value,
+      }, { noAuth: true });
+      CISApi.setTokens(data.access_token, data.refresh_token);
+      window.location.href = "/index.html";
+    } catch (err) {
+      authError.innerText = err.message || "Registration failed";
+    }
+  });
+
+  forgotForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    authError.innerText = "";
+    try {
+      await CISApi.post("/api/auth/forgot-password", {
+        email: document.getElementById("forgotEmail").value,
+      }, { noAuth: true });
+      authError.style.color = "var(--cis-primary-light)";
+      authError.innerText = "If that email exists, a reset link has been sent (check server logs in dev mode).";
+    } catch (err) {
+      authError.style.color = "#f0a6a3";
+      authError.innerText = err.message || "Request failed";
+    }
+  });
+</script>
+</body>
+</html>

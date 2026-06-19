@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Users · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("admin-users", "Users", "Manage platform users and roles (Admin only)");
+</script>
+
+<div class="cis-bento">
+  <div class="cis-card cis-span-4">
+    <div id="usersTable"><div class="cis-loader"><div class="cis-spinner"></div></div></div>
+  </div>
+</div>
+
+<script>
+async function load() {
+  try {
+    const users = await CISApi.get("/api/admin/users");
+    document.getElementById("usersTable").innerHTML = `
+      <table class="cis-table">
+        <thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Status</th><th>Verified</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${users.map(u => `
+            <tr>
+              <td>${cisEscape(u.email)}</td>
+              <td>${cisEscape(u.full_name || "—")}</td>
+              <td><span class="cis-badge cis-badge-${u.role === "admin" ? "success" : "neutral"}">${u.role}</span></td>
+              <td><span class="cis-badge cis-badge-${u.is_active ? "success" : "danger"}">${u.is_active ? "active" : "disabled"}</span></td>
+              <td>${u.is_email_verified ? "✓" : "—"}</td>
+              <td>${cisFmtDate(u.created_at)}</td>
+              <td style="display:flex;gap:6px;">
+                <button class="cis-btn cis-btn-ghost cis-btn-sm" data-role-toggle="${u.id}" data-current="${u.role}">
+                  Make ${u.role === "admin" ? "User" : "Admin"}
+                </button>
+                <button class="cis-btn cis-btn-${u.is_active ? "danger" : "ghost"} cis-btn-sm" data-status-toggle="${u.id}" data-current="${u.is_active}">
+                  ${u.is_active ? "Disable" : "Enable"}
+                </button>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>`;
+
+    document.querySelectorAll("[data-role-toggle]").forEach(btn => btn.addEventListener("click", async () => {
+      const newRole = btn.dataset.current === "admin" ? "user" : "admin";
+      try { await CISApi.patch(`/api/admin/users/${btn.dataset.roleToggle}/role?role=${newRole}`); cisToast("Role updated"); load(); }
+      catch (e) { cisToast(e.message || "Failed", "error"); }
+    }));
+    document.querySelectorAll("[data-status-toggle]").forEach(btn => btn.addEventListener("click", async () => {
+      const newStatus = btn.dataset.current !== "true";
+      try { await CISApi.patch(`/api/admin/users/${btn.dataset.statusToggle}/status?is_active=${newStatus}`); cisToast("Status updated"); load(); }
+      catch (e) { cisToast(e.message || "Failed", "error"); }
+    }));
+  } catch (e) {
+    document.getElementById("usersTable").innerHTML = `<div class="cis-empty-state"><i class="fa-solid fa-lock"></i>${cisEscape(e.message || "Admin access required")}</div>`;
+  }
+}
+load();
+</script>
+</body>
+</html>

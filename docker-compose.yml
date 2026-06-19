@@ -1,0 +1,27 @@
+version: "3.9"
+
+# CACTUS INTELLIGENCE SUITE - single container deployment.
+# No Postgres, no Redis, no Celery: SQLite + an in-process scheduler
+# handle persistence and monitoring respectively.
+
+services:
+  cis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - cis_storage:/app/backend/storage
+      - cis_uploads:/app/backend/uploads
+      # Mount your real dataset folders here so CIS can read local
+      # data.yaml / dataset paths, e.g.:
+      # - D:/datasets:/datasets
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-cis-secret}
+      - REFRESH_SECRET_KEY=${REFRESH_SECRET_KEY:-change-me-cis-refresh-secret}
+    restart: unless-stopped
+
+volumes:
+  cis_storage:
+  cis_uploads:

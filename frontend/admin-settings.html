@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("admin-settings", "Settings", "System health, storage and active background jobs");
+</script>
+
+<div class="cis-bento" id="settingsGrid">
+  <div class="cis-card cis-span-4"><div class="cis-loader"><div class="cis-spinner"></div></div></div>
+</div>
+
+<script>
+(async function () {
+  try {
+    const health = await CISApi.get("/api/admin/system-health");
+    const jobs = await CISApi.get("/api/admin/active-jobs");
+    document.getElementById("settingsGrid").innerHTML = `
+      <div class="cis-card cis-span-1"><div class="cis-card-title">Users</div><div class="cis-stat-value">${health.users}</div></div>
+      <div class="cis-card cis-span-1"><div class="cis-card-title">Datasets</div><div class="cis-stat-value">${health.datasets}</div></div>
+      <div class="cis-card cis-span-1"><div class="cis-card-title">Models</div><div class="cis-stat-value">${health.models}</div></div>
+      <div class="cis-card cis-span-1"><div class="cis-card-title">Active Monitoring Jobs</div><div class="cis-stat-value">${health.active_monitoring_jobs}</div></div>
+
+      <div class="cis-card cis-span-2">
+        <div class="cis-card-title" style="margin-bottom:10px;">Storage</div>
+        <p>Used: ${health.storage.used_gb} GB / ${health.storage.total_gb} GB (${health.storage.free_gb} GB free)</p>
+        <div class="cis-progress"><div style="width:${(health.storage.used_gb/health.storage.total_gb*100).toFixed(1)}%;"></div></div>
+        <p style="margin-top:10px;">Dataset storage: ${health.dataset_storage_mb} MB</p>
+      </div>
+
+      <div class="cis-card cis-span-2">
+        <div class="cis-card-title" style="margin-bottom:10px;">Active Background Jobs (Monitoring Scheduler)</div>
+        ${jobs.length ? `<table class="cis-table"><thead><tr><th>Job</th><th>Next Run</th></tr></thead><tbody>
+          ${jobs.map(j => `<tr><td>${j.id}</td><td>${j.next_run_time}</td></tr>`).join("")}
+        </tbody></table>` : `<p>No active jobs.</p>`}
+      </div>
+
+      <div class="cis-card cis-span-4">
+        <div class="cis-card-title" style="margin-bottom:10px;">About</div>
+        <p>Cactus Intelligence Suite runs entirely on SQLite + an in-process scheduler — no Redis or Celery
+          required. Optional integrations (Roboflow import, GPU model runtimes) degrade gracefully when not configured.</p>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById("settingsGrid").innerHTML = `<div class="cis-card cis-span-4"><div class="cis-empty-state"><i class="fa-solid fa-lock"></i>${cisEscape(e.message || "Admin access required")}</div></div>`;
+  }
+})();
+</script>
+</body>
+</html>

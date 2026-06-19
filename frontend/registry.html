@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dataset Registry · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gridjs/6.2.0/theme/mermaid.min.css">
+<style>
+  /* ── Defeat Grid.js mermaid theme white backgrounds ── */
+  .gridjs-container,
+  .gridjs-wrapper,
+  .gridjs-table,
+  .gridjs-tbody,
+  .gridjs-thead,
+  .gridjs-tfoot,
+  .gridjs-footer {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color-scheme: dark;
+  }
+
+  .gridjs-th {
+    background: rgba(255,255,255,0.05) !important;
+    color: var(--cis-text-muted) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--cis-surface-border) !important;
+    font-size: 11.5px !important;
+    font-family: var(--cis-font-body) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 12px !important;
+  }
+
+  .gridjs-th-content { color: inherit !important; }
+  .gridjs-th button, .gridjs-th-sort { color: inherit !important; background: transparent !important; }
+
+  .gridjs-td {
+    background: transparent !important;
+    color: var(--cis-text) !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    font-size: 13px !important;
+    font-family: var(--cis-font-body) !important;
+    padding: 12px !important;
+  }
+
+  .gridjs-tr { background: transparent !important; }
+  .gridjs-tr:hover .gridjs-td { background: rgba(255,255,255,0.035) !important; }
+
+  /* Search input */
+  .gridjs-search-input {
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid var(--cis-surface-border) !important;
+    color: var(--cis-text) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    font-family: var(--cis-font-body) !important;
+    font-size: 13px !important;
+    outline: none !important;
+  }
+  .gridjs-search-input::placeholder { color: var(--cis-text-faint) !important; }
+  .gridjs-search-input:focus { border-color: var(--cis-primary) !important; }
+
+  /* Pagination */
+  .gridjs-pagination {
+    background: transparent !important;
+    border: none !important;
+    color: var(--cis-text-muted) !important;
+    padding: 12px 0 0 !important;
+  }
+  .gridjs-pagination .gridjs-pages button {
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid var(--cis-surface-border) !important;
+    color: var(--cis-text) !important;
+    border-radius: 6px !important;
+    font-family: var(--cis-font-body) !important;
+  }
+  .gridjs-pagination .gridjs-pages button:hover {
+    background: rgba(255,255,255,0.08) !important;
+  }
+  .gridjs-pagination .gridjs-pages button[disabled],
+  .gridjs-pagination .gridjs-pages button.gridjs-currentPage {
+    opacity: 0.45 !important;
+    cursor: default !important;
+  }
+  .gridjs-pagination .gridjs-pages button.gridjs-currentPage {
+    background: rgba(114,171,82,0.2) !important;
+    border-color: rgba(114,171,82,0.4) !important;
+    color: var(--cis-primary-light) !important;
+    opacity: 1 !important;
+  }
+
+  /* Summary text */
+  .gridjs-summary { color: var(--cis-text-faint) !important; font-size: 12px !important; }
+</style>
+
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("registry", "Dataset Registry", "Central, searchable registry of every dataset tracked by CIS");
+</script>
+
+<div class="cis-bento">
+  <div class="cis-card cis-span-4">
+    <div id="registryGrid"><div class="cis-loader"><div class="cis-spinner"></div></div></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gridjs/6.2.0/gridjs.umd.js"></script>
+<script>
+(async function () {
+  try {
+    const datasets = await CISApi.get("/api/datasets");
+    document.getElementById("registryGrid").innerHTML = "";
+
+    new gridjs.Grid({
+      columns: [
+        { name: "Dataset ID", id: "id", width: "110px",
+          formatter: (cell) => gridjs.html(`<code style="font-size:11px;">${cell.slice(0, 8)}</code>`) },
+        { name: "Name", id: "name" },
+        { name: "Source", id: "source_type",
+          formatter: (cell) => gridjs.html(`<span class="cis-badge cis-badge-neutral">${cell}</span>`) },
+        { name: "Classes", id: "num_classes" },
+        { name: "Status", id: "status",
+          formatter: (cell) => gridjs.html(`<span class="cis-badge cis-badge-info">${cell}</span>`) },
+        { name: "Owner", id: "owner_id", formatter: (cell) => cell ? cell.slice(0, 8) : "—" },
+        { name: "Created", id: "created_at", formatter: (cell) => cisFmtDate(cell) },
+        { name: "", id: "id_link", formatter: (cell) =>
+            gridjs.html(`<a class="cis-btn cis-btn-ghost cis-btn-sm" href="/dataset-detail.html?id=${cell}">Open</a>`) },
+      ],
+      data: datasets.map(d => ({ ...d, id_link: d.id })),
+      search: true,
+      sort: true,
+      pagination: { limit: 12 },
+      style: { table: { "font-size": "13px" } },
+    }).render(document.getElementById("registryGrid"));
+  } catch (e) {
+    cisToast(e.message || "Failed to load registry", "error");
+  }
+})();
+</script>
+</body>
+</html>

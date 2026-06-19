@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dataset · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("health", "Dataset", "Loading…");
+</script>
+
+<div class="cis-bento" id="headerBento">
+  <div class="cis-card cis-span-4">
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div class="cis-grade" id="gradeBox">—</div>
+      <div style="flex:1;min-width:200px;">
+        <h2 id="datasetName" style="margin-bottom:4px;">Loading…</h2>
+        <div style="color:var(--cis-text-faint);font-size:12.5px;" id="datasetMeta"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <select class="cis-select" id="rescanModeSelect" style="width:200px;">
+          <option value="quick">Quick scan</option>
+          <option value="standard" selected>Standard scan</option>
+          <option value="deep">Deep scan</option>
+        </select>
+        <button class="cis-btn cis-btn-primary" id="rescanBtn"><i class="fa-solid fa-rotate"></i> Re-scan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cis-bento" style="margin-top:20px;">
+  <div class="cis-card cis-span-4">
+    <div class="cis-tabs">
+      <div class="cis-tab active" data-tab="overview">Overview</div>
+      <div class="cis-tab" data-tab="classes">Class Intelligence</div>
+      <div class="cis-tab" data-tab="quality">Quality &amp; Duplicates</div>
+      <div class="cis-tab" data-tab="recommendations">Recommendations</div>
+      <div class="cis-tab" data-tab="monitoring">Monitoring</div>
+      <div class="cis-tab" data-tab="reports">Reports</div>
+      <div class="cis-tab" data-tab="history">History</div>
+    </div>
+
+    <div id="panelOverview"></div>
+    <div id="panelClasses" style="display:none;"></div>
+    <div id="panelQuality" style="display:none;"></div>
+    <div id="panelRecommendations" style="display:none;"></div>
+    <div id="panelMonitoring" style="display:none;"></div>
+    <div id="panelReports" style="display:none;"></div>
+    <div id="panelHistory" style="display:none;"></div>
+  </div>
+</div>
+
+<script src="js/dataset-detail.js"></script>
+</body>
+</html>

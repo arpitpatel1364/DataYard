@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Monitoring · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("monitoring", "Live Monitoring", "Datasets under continuous monitoring and their health trends");
+</script>
+
+<div class="cis-bento" id="monitoringGrid">
+  <div class="cis-card cis-span-4"><div class="cis-loader"><div class="cis-spinner"></div></div></div>
+</div>
+
+<script>
+async function load() {
+  try {
+    const data = await CISApi.get("/api/datasets/monitoring/live");
+    const grid = document.getElementById("monitoringGrid");
+    if (!data.length) {
+      grid.innerHTML = `<div class="cis-card cis-span-4"><div class="cis-empty-state"><i class="fa-solid fa-satellite-dish"></i>
+        No datasets are currently being monitored.
+        <a class="cis-btn cis-btn-primary cis-btn-sm" href="/datasets.html">Enable monitoring on a dataset</a></div></div>`;
+      return;
+    }
+    grid.innerHTML = data.map((d, i) => `
+      <div class="cis-card cis-span-2">
+        <div class="cis-card-header">
+          <span class="cis-card-title">${cisEscape(d.name)}</span>
+          <a class="cis-btn cis-btn-ghost cis-btn-sm" href="/dataset-detail.html?id=${d.dataset_id}">Open</a>
+        </div>
+        <p style="font-size:12.5px;">Scans every ${d.scan_every_minutes} min · last scan ${cisFmtDate(d.last_scanned_at)}</p>
+        <canvas id="chart${i}" height="100"></canvas>
+      </div>
+    `).join("");
+
+    data.forEach((d, i) => {
+      new Chart(document.getElementById(`chart${i}`), {
+        type: "line",
+        data: {
+          labels: d.health_timeline.map(t => "v" + t.version),
+          datasets: [{ data: d.health_timeline.map(t => t.score), borderColor: "#72ab52",
+                       backgroundColor: "rgba(114,171,82,0.15)", fill: true, tension: 0.3 }],
+        },
+        options: { plugins: { legend: { display: false } },
+          scales: { y: { min: 0, max: 100, ticks: { color: "#a7b5a3" }, grid: { color: "rgba(255,255,255,0.05)" } },
+                    x: { ticks: { color: "#a7b5a3" }, grid: { display: false } } } },
+      });
+    });
+  } catch (e) { cisToast(e.message || "Failed to load monitoring feed", "error"); }
+}
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>

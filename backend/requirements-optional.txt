@@ -1,0 +1,19 @@
+# Optional, heavier dependencies for the Model Testing Lab.
+# Not installed by default (requirements.txt) because they are large and
+# not needed for the core dataset-intelligence features of CIS.
+#
+# Install whichever you need:
+#
+#   pip install -r requirements-optional.txt
+#
+# - onnxruntime: enables ONNX performance benchmarking
+# - torch + ultralytics: enables full YOLO accuracy (mAP/precision/recall),
+#   robustness, and output-quality benchmarking for .pt models
+# - tensorrt / openvino: install per NVIDIA/Intel's own instructions for
+#   your hardware; CIS detects them automatically once importable and
+#   the corresponding extension points in app/services/model_benchmark.py
+#   are ready to be wired up to your runtime.
+
+onnxruntime==1.18.1
+torch==2.3.1
+ultralytics==8.2.58

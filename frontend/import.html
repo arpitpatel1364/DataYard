@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import Dataset · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("import", "Import Dataset", "Auto-detect structure from data.yaml — no manual path entry required");
+</script>
+
+<div class="cis-bento">
+  <div class="cis-card cis-span-4">
+    <div class="cis-tabs">
+      <div class="cis-tab active" data-tab="local">Local Dataset</div>
+      <div class="cis-tab" data-tab="roboflow">Roboflow Import</div>
+    </div>
+
+    <!-- LOCAL TAB -->
+    <div id="tabPanelLocal">
+      <p>Point CIS at a <code>data.yaml</code> file, or at the dataset's root folder — the auto-detection
+        engine will resolve train/val/test paths, classes, and counts automatically.</p>
+      <div class="cis-field">
+        <label class="cis-label">Path to data.yaml or dataset folder (on the server's filesystem)</label>
+        <input class="cis-input" id="localPathInput" placeholder="e.g. D:/datasets/my-project/data.yaml or /data/my-project">
+      </div>
+      <div class="cis-field">
+        <label class="cis-label">Dataset name (optional)</label>
+        <input class="cis-input" id="localNameInput" placeholder="Defaults to the folder name">
+      </div>
+      <button class="cis-btn cis-btn-primary" id="detectLocalBtn"><i class="fa-solid fa-magnifying-glass-chart"></i> Detect dataset structure</button>
+
+      <div style="margin-top:18px;border-top:1px solid var(--cis-surface-border);padding-top:18px;">
+        <label class="cis-label">…or drag a data.yaml file here</label>
+        <div id="dropZone" style="border:1.5px dashed var(--cis-surface-border);border-radius:12px;padding:26px;text-align:center;color:var(--cis-text-faint);cursor:pointer;">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size:22px;margin-bottom:8px;display:block;"></i>
+          Drop data.yaml here, or click to browse
+        </div>
+        <input type="file" id="yamlFileInput" accept=".yaml,.yml" style="display:none;">
+        <div class="cis-field" style="margin-top:10px;">
+          <label class="cis-label">Dataset root folder on server (required alongside the dropped file)</label>
+          <input class="cis-input" id="dropRootInput" placeholder="/data/my-project">
+        </div>
+        <button class="cis-btn cis-btn-ghost" id="uploadYamlBtn"><i class="fa-solid fa-upload"></i> Use dropped data.yaml</button>
+      </div>
+    </div>
+
+    <!-- ROBOFLOW TAB -->
+    <div id="tabPanelRoboflow" style="display:none;">
+      <p>Import directly from a Roboflow project export. Paste the full python snippet provided by Roboflow.</p>
+      <div class="cis-field">
+        <label class="cis-label">Roboflow Python Snippet</label>
+        <textarea class="cis-input" id="rfSnippet" rows="6" placeholder="!pip install roboflow&#10;from roboflow import Roboflow&#10;rf = Roboflow(api_key=&quot;...&quot;)&#10;..."></textarea>
+      </div>
+      <div class="cis-field"><label class="cis-label">Dataset name (optional)</label><input class="cis-input" id="rfNameInput"></div>
+      <button class="cis-btn cis-btn-primary" id="importRoboflowBtn"><i class="fa-solid fa-cloud-arrow-down"></i> Import from Roboflow</button>
+    </div>
+  </div>
+
+  <!-- DETECTION SUMMARY -->
+  <div class="cis-card cis-span-4" id="detectionSummaryCard" style="display:none;">
+    <div class="cis-card-header"><span class="cis-card-title">Detected Dataset Summary</span></div>
+    <div id="detectionSummaryBody"></div>
+  </div>
+
+  <!-- CLASS SELECTION -->
+  <div class="cis-card cis-span-4" id="classSelectionCard" style="display:none;">
+    <div class="cis-card-header">
+      <span class="cis-card-title">Select Classes for Intelligence Analysis</span>
+      <div>
+        <button class="cis-btn cis-btn-ghost cis-btn-sm" id="selectAllBtn">Select all</button>
+        <button class="cis-btn cis-btn-ghost cis-btn-sm" id="selectNoneBtn">Clear</button>
+      </div>
+    </div>
+    <div class="cis-checklist" id="classChecklist"></div>
+
+    <div style="display:flex;gap:14px;align-items:center;margin-top:20px;">
+      <label class="cis-label" style="margin:0;">Scan mode</label>
+      <select class="cis-select" id="scanModeSelect" style="width:280px;">
+        <option value="quick">Quick — structure & counts</option>
+        <option value="standard" selected>Standard — + integrity & quality</option>
+        <option value="deep">Deep — + duplicates & leakage</option>
+      </select>
+      <button class="cis-btn cis-btn-primary" id="registerAndScanBtn" style="margin-left:auto;">
+        <i class="fa-solid fa-play"></i> Register &amp; Run Analysis
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="js/import.js"></script>
+</body>
+</html>

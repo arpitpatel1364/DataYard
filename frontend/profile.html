@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile Settings · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("profile", "Profile Settings", "Manage your account and preferences");
+</script>
+
+<div class="cis-bento" id="profileGrid">
+  <div class="cis-card cis-span-2">
+    <div class="cis-card-header"><span class="cis-card-title">Personal Information</span></div>
+    <div class="cis-field">
+      <label class="cis-label">Full Name</label>
+      <input type="text" class="cis-input" id="profileName" placeholder="Your full name">
+    </div>
+    <div class="cis-field">
+      <label class="cis-label">Email Address</label>
+      <input type="email" class="cis-input" id="profileEmail" disabled style="opacity:0.6;cursor:not-allowed;">
+    </div>
+    <div class="cis-field">
+      <label class="cis-label">Role</label>
+      <input type="text" class="cis-input" id="profileRole" disabled style="opacity:0.6;cursor:not-allowed;">
+    </div>
+    <button class="cis-btn cis-btn-primary" id="saveProfileBtn"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+  </div>
+  
+  <div class="cis-card cis-span-2">
+    <div class="cis-card-header"><span class="cis-card-title">Security & Preferences</span></div>
+    <p>Password changes require email verification. Notifications are sent to your registered email address.</p>
+    <div class="cis-field" style="margin-top: 15px;">
+      <label class="cis-label">New Password</label>
+      <input type="password" class="cis-input" id="profilePassword" placeholder="Leave blank to keep current">
+    </div>
+    <div class="cis-field">
+      <label class="cis-label">Confirm New Password</label>
+      <input type="password" class="cis-input" id="profilePasswordConfirm">
+    </div>
+    <button class="cis-btn cis-btn-ghost" id="updatePasswordBtn"><i class="fa-solid fa-key"></i> Update Password</button>
+  </div>
+</div>
+
+<script src="js/profile.js"></script>
+</body>
+</html>

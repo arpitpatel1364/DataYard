@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Analytics · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("model-detail", "Model Analytics", "Run benchmarks and inspect results");
+</script>
+
+<div class="cis-bento">
+  <div class="cis-card cis-span-4">
+    <div class="cis-card-header"><span class="cis-card-title" id="modelTitle">Loading…</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="cis-btn cis-btn-primary" data-run="performance"><i class="fa-solid fa-gauge-high"></i> Performance</button>
+      <button class="cis-btn cis-btn-ghost" data-run="efficiency"><i class="fa-solid fa-microchip"></i> Efficiency</button>
+      <button class="cis-btn cis-btn-ghost" data-run="accuracy"><i class="fa-solid fa-bullseye"></i> Accuracy</button>
+      <button class="cis-btn cis-btn-ghost" data-run="output-quality"><i class="fa-solid fa-chart-pie"></i> Output Quality</button>
+      <button class="cis-btn cis-btn-ghost" data-run="robustness"><i class="fa-solid fa-shield-halved"></i> Robustness</button>
+    </div>
+  </div>
+
+  <div class="cis-card cis-span-4" id="runResultCard" style="display:none;"></div>
+
+  <div class="cis-card cis-span-4">
+    <div class="cis-card-header"><span class="cis-card-title">Run History</span></div>
+    <div id="runsTable"><div class="cis-loader"><div class="cis-spinner"></div></div></div>
+  </div>
+</div>
+
+<script src="js/model-detail.js"></script>
+</body>
+</html>

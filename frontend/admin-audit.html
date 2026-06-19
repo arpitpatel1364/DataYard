@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Logs · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("admin-audit", "Audit Logs", "Every meaningful action across CIS, for compliance and traceability");
+</script>
+
+<div class="cis-bento">
+  <div class="cis-card cis-span-4">
+    <div id="auditTable"><div class="cis-loader"><div class="cis-spinner"></div></div></div>
+  </div>
+</div>
+
+<script>
+(async function () {
+  try {
+    const logs = await CISApi.get("/api/admin/audit-logs?limit=300");
+    const container = document.getElementById("auditTable");
+    if (!logs.length) { container.innerHTML = `<div class="cis-empty-state">No audit events yet.</div>`; return; }
+    container.innerHTML = `
+      <table class="cis-table">
+        <thead><tr><th>Action</th><th>Resource</th><th>Details</th><th>IP</th><th>When</th></tr></thead>
+        <tbody>
+          ${logs.map(l => `
+            <tr>
+              <td><span class="cis-badge cis-badge-info">${l.action}</span></td>
+              <td>${l.resource_type ? `${l.resource_type}:${(l.resource_id||"").slice(0,8)}` : "—"}</td>
+              <td style="font-size:11.5px;color:var(--cis-text-faint);">${cisEscape(JSON.stringify(l.details || {}))}</td>
+              <td>${l.ip_address || "—"}</td>
+              <td>${cisFmtDate(l.created_at)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>`;
+  } catch (e) {
+    document.getElementById("auditTable").innerHTML = `<div class="cis-empty-state"><i class="fa-solid fa-lock"></i>${cisEscape(e.message || "Admin access required")}</div>`;
+  }
+})();
+</script>
+</body>
+</html>

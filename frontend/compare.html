@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compare Datasets · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("compare", "Compare Datasets", "Local vs Local, Local vs Roboflow, or Roboflow vs Roboflow — same engine either way");
+</script>
+
+<div class="cis-bento">
+  <div class="cis-card cis-span-2">
+    <div class="cis-card-title" style="margin-bottom:12px;">Dataset A (baseline)</div>
+    <select class="cis-select" id="datasetASelect"></select>
+  </div>
+  <div class="cis-card cis-span-2">
+    <div class="cis-card-title" style="margin-bottom:12px;">Dataset B (compare to)</div>
+    <select class="cis-select" id="datasetBSelect"></select>
+  </div>
+  <div class="cis-span-4" style="text-align:center;">
+    <button class="cis-btn cis-btn-primary" id="compareBtn"><i class="fa-solid fa-code-compare"></i> Compare</button>
+  </div>
+
+  <div class="cis-card cis-span-4" id="resultCard" style="display:none;"></div>
+</div>
+
+<script>
+(async function () {
+  try {
+    const datasets = await CISApi.get("/api/datasets");
+    const options = datasets.map(d => `<option value="${d.id}">${cisEscape(d.name)} (${d.source_type})</option>`).join("");
+    document.getElementById("datasetASelect").innerHTML = `<option value="">Select a dataset…</option>` + options;
+    document.getElementById("datasetBSelect").innerHTML = `<option value="">Select a dataset…</option>` + options;
+  } catch (e) { cisToast(e.message || "Failed to load datasets", "error"); }
+})();
+
+document.getElementById("compareBtn").addEventListener("click", async () => {
+  const a = document.getElementById("datasetASelect").value;
+  const b = document.getElementById("datasetBSelect").value;
+  if (!a || !b || a === b) return cisToast("Choose two different datasets", "error");
+
+  const card = document.getElementById("resultCard");
+  card.style.display = "block";
+  card.innerHTML = `<div class="cis-loader"><div class="cis-spinner"></div></div>`;
+  try {
+    const result = await CISApi.post("/api/compare", { dataset_a_id: a, dataset_b_id: b });
+    renderComparison(result);
+  } catch (e) {
+    card.innerHTML = `<div class="cis-empty-state"><i class="fa-solid fa-triangle-exclamation"></i>${cisEscape(e.message || "Comparison failed")}</div>`;
+  }
+});
+
+function renderComparison(r) {
+  const card = document.getElementById("resultCard");
+  const a = r.stats_a;
+  const b = r.stats_b;
+
+  const getWinnerClass = (valA, valB) => {
+    if (valA === valB) return "";
+    return valA > valB ? "color:var(--cis-success);" : "color:var(--cis-danger);";
+  };
+
+  const getWinnerIcon = (valA, valB) => {
+    if (valA === valB) return "";
+    return valA > valB ? `<i class="fa-solid fa-trophy" style="color:var(--cis-success);margin-left:8px;"></i>` : "";
+  };
+
+  card.innerHTML = `
+    <div class="cis-card-title" style="margin-bottom:16px;">
+      Dataset Analytics: ${cisEscape(r.dataset_a.name)} vs ${cisEscape(r.dataset_b.name)}
+    </div>
+
+    <table class="cis-table" style="margin-bottom:24px;">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>${cisEscape(r.dataset_a.name)}</th>
+          <th>${cisEscape(r.dataset_b.name)}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Health Score</strong></td>
+          <td style="${getWinnerClass(a.health_score, b.health_score)}">
+            ${a.health_score}% (${a.health_grade}) ${getWinnerIcon(a.health_score, b.health_score)}
+          </td>
+          <td style="${getWinnerClass(b.health_score, a.health_score)}">
+            ${b.health_score}% (${b.health_grade}) ${getWinnerIcon(b.health_score, a.health_score)}
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Total Images</strong></td>
+          <td style="${getWinnerClass(a.total_images, b.total_images)}">
+            ${a.total_images} ${getWinnerIcon(a.total_images, b.total_images)}
+          </td>
+          <td style="${getWinnerClass(b.total_images, a.total_images)}">
+            ${b.total_images} ${getWinnerIcon(b.total_images, a.total_images)}
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Total Classes</strong></td>
+          <td>${a.total_classes}</td>
+          <td>${b.total_classes}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cis-bento" style="grid-template-columns:1fr 1fr; gap:16px; margin-bottom: 24px;">
+      <div class="cis-card" style="background:rgba(255,255,255,0.02);">
+        <div class="cis-card-title">${cisEscape(r.dataset_a.name)} Class Distribution</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+          ${a.classes.map(c => `<span class="cis-badge cis-badge-primary">${cisEscape(c)} <span style="opacity:0.7;margin-left:4px;">${a.class_counts[c]}</span></span>`).join("")}
+          ${a.classes.length === 0 ? '<span class="cis-badge">No classes</span>' : ''}
+        </div>
+      </div>
+      <div class="cis-card" style="background:rgba(255,255,255,0.02);">
+        <div class="cis-card-title">${cisEscape(r.dataset_b.name)} Class Distribution</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+          ${b.classes.map(c => `<span class="cis-badge cis-badge-primary">${cisEscape(c)} <span style="opacity:0.7;margin-left:4px;">${b.class_counts[c]}</span></span>`).join("")}
+          ${b.classes.length === 0 ? '<span class="cis-badge">No classes</span>' : ''}
+        </div>
+      </div>
+    </div>
+    
+    <div class="cis-bento" style="grid-template-columns:1fr 1fr; gap:16px; margin-bottom: 24px;">
+      <div class="cis-card" style="background:rgba(255,255,255,0.02);">
+        <div class="cis-card-title">Deep Analytics (${cisEscape(r.dataset_a.name)})</div>
+        <table class="cis-table" style="margin-top:12px;">
+            <tbody>
+                ${Object.entries(a.scores).map(([k, v]) => `<tr><td>${k}</td><td>${v}%</td></tr>`).join("")}
+            </tbody>
+        </table>
+      </div>
+      <div class="cis-card" style="background:rgba(255,255,255,0.02);">
+        <div class="cis-card-title">Deep Analytics (${cisEscape(r.dataset_b.name)})</div>
+        <table class="cis-table" style="margin-top:12px;">
+            <tbody>
+                ${Object.entries(b.scores).map(([k, v]) => `<tr><td>${k}</td><td>${v}%</td></tr>`).join("")}
+            </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

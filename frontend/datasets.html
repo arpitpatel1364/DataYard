@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Datasets · Cactus Intelligence Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script>
+  cisRequireAuth();
+  cisRenderShell("my-datasets", "My Datasets", "Datasets you've imported and registered in CIS");
+</script>
+
+<div class="cis-bento">
+  <div class="cis-card cis-span-4">
+    <div class="cis-card-header">
+      <span class="cis-card-title">All Datasets</span>
+      <a class="cis-btn cis-btn-primary cis-btn-sm" href="/import.html"><i class="fa-solid fa-plus"></i> Import dataset</a>
+    </div>
+    <div id="datasetsTable"><div class="cis-loader"><div class="cis-spinner"></div></div></div>
+  </div>
+</div>
+
+<script>
+(async function () {
+  try {
+    const datasets = await CISApi.get("/api/datasets");
+    const container = document.getElementById("datasetsTable");
+    if (!datasets.length) {
+      container.innerHTML = `<div class="cis-empty-state"><i class="fa-solid fa-database"></i><div>No datasets yet</div>
+        <a class="cis-btn cis-btn-primary cis-btn-sm" href="/import.html">Import your first dataset</a></div>`;
+      return;
+    }
+    container.innerHTML = `
+      <table class="cis-table">
+        <thead><tr><th>Name</th><th>Source</th><th>Classes</th><th>Status</th><th>Monitoring</th><th>Created</th><th></th></tr></thead>
+        <tbody>
+          ${datasets.map(ds => `
+            <tr>
+              <td><strong>${cisEscape(ds.name)}</strong><div style="color:var(--cis-text-faint);font-size:11.5px;">${cisEscape(ds.root_path || "")}</div></td>
+              <td><span class="cis-badge cis-badge-neutral">${ds.source_type}</span></td>
+              <td>${ds.num_classes}</td>
+              <td><span class="cis-badge cis-badge-info">${ds.status}</span></td>
+              <td>${ds.monitoring_enabled ? `<span class="cis-badge cis-badge-success">Every ${ds.scan_every_minutes}m</span>` : `<span class="cis-badge cis-badge-neutral">Off</span>`}</td>
+              <td>${cisFmtDate(ds.created_at)}</td>
+              <td style="display:flex;gap:6px;">
+                <a class="cis-btn cis-btn-ghost cis-btn-sm" href="/dataset-detail.html?id=${ds.id}">Open</a>
+                <button class="cis-btn cis-btn-danger cis-btn-sm" data-delete="${ds.id}"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>`;
+
+    container.querySelectorAll("[data-delete]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Delete this dataset and all its scan history? This cannot be undone.")) return;
+        try {
+          await CISApi.delete(`/api/datasets/${btn.dataset.delete}`);
+          cisToast("Dataset deleted");
+          location.reload();
+        } catch (e) { cisToast(e.message || "Delete failed", "error"); }
+      });
+    });
+  } catch (e) {
+    cisToast(e.message || "Failed to load datasets", "error");
+  }
+})();
+</script>
+</body>
+</html>
