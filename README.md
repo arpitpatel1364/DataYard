@@ -23,6 +23,7 @@ The platform is engineered for simplicity and self-containment. It runs on SQLit
 - **Class Intelligence**: Analyzes class distribution, quality flags, diversity heuristics, training readiness, and provides recommendations per selected class.
 - **Dataset Health Engine**: Performs structural and integrity checks, annotation validation (YOLO, COCO, VOC), image quality analysis (blur, brightness, contrast, noise via OpenCV), duplicate detection (SHA256 exact and pHash near-duplicate), and train/val/test leakage detection. Computes a weighted Health Score and Grade.
 - **Dataset Comparison Engine**: Normalizes and compares datasets across different sources (Local vs. Local, Local vs. Roboflow, Roboflow vs. Roboflow).
+- **Dataset Merger**: Harmonizes cross-dataset taxonomies via a drag-and-drop class mapping interface. Dynamically remaps YOLO annotation class IDs, generates a unified `data.yaml`, and outputs a train-ready dataset.
 - **Versioning & Registry**: Automatically creates a new `DatasetVersion` upon every scan, maintaining a searchable registry and timeline of health scores.
 - **Reporting**: Generates and exports reports in PDF (ReportLab), Excel (openpyxl), CSV, and JSON formats.
 - **Monitoring**: Background jobs via APScheduler automatically re-scan monitored datasets on defined intervals.
